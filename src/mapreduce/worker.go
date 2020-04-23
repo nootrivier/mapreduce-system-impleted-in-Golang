@@ -53,30 +53,30 @@ func (wk *Worker) DoTask(arg *DoTaskArgs, reply *TaskReply) error {
 		// time to a given worker.
 		log.Fatal("Worker.DoTask: more than one DoTask sent concurrently to a single worker\n")
 	}
+	//
+	//pause := false
+	//if wk.parallelism != nil {
+	//	wk.parallelism.mu.Lock()
+	//	wk.parallelism.now += 1
+	//	if wk.parallelism.now > wk.parallelism.max {
+	//		wk.parallelism.max = wk.parallelism.now
+	//	}
+	//	if wk.parallelism.max < 2 {
+	//		pause = true
+	//	}
+	//	wk.parallelism.mu.Unlock()
+	//}
 
-	pause := false
-	if wk.parallelism != nil {
-		wk.parallelism.mu.Lock()
-		wk.parallelism.now += 1
-		if wk.parallelism.now > wk.parallelism.max {
-			wk.parallelism.max = wk.parallelism.now
-		}
-		if wk.parallelism.max < 2 {
-			pause = true
-		}
-		wk.parallelism.mu.Unlock()
-	}
-
-	if pause {
-		// give other workers a chance to prove that
-		// they are executing in parallel.
-		time.Sleep(time.Second)
-	}
+	//if pause {
+	//	// give other workers a chance to prove that
+	//	// they are executing in parallel.
+	//	time.Sleep(time.Second)
+	//}
 
 	switch arg.Phase {
 	case mapPhase:
 		// if it run on GFS, this part is not necessary according to the paper,
-		// as the the intermediate files are store on GFS
+		// as those files are store on GFS
 		err := wk.pullFile("Master", wk.MasterAddress, arg.File)
 		if err != nil {
 			reply.MapOrReduceFail = 0
@@ -107,11 +107,11 @@ func (wk *Worker) DoTask(arg *DoTaskArgs, reply *TaskReply) error {
 	wk.concurrent -= 1
 	wk.Unlock()
 
-	if wk.parallelism != nil {
-		wk.parallelism.mu.Lock()
-		wk.parallelism.now -= 1
-		wk.parallelism.mu.Unlock()
-	}
+	//if wk.parallelism != nil {
+	//	wk.parallelism.mu.Lock()
+	//	wk.parallelism.now -= 1
+	//	wk.parallelism.mu.Unlock()
+	//}
 
 	fmt.Printf("%s: %v task #%d done\n", wk.name, arg.Phase, arg.TaskNumber)
 	return nil

@@ -1,6 +1,9 @@
 package mapreduce
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 import "net/rpc"
 import "net"
 
@@ -35,7 +38,7 @@ func (mr *Master) schedule(jobName string, mapFiles []string, nReduce int, phase
 
 	var wg sync.WaitGroup
     wg.Add(ntasks)
-    fixChannel = make(chan bool)
+    fixChannel := make(chan bool)
     for i := 0; i < ntasks; i++ {
         go func(i int) {
             defer wg.Done()
@@ -58,7 +61,7 @@ func (mr *Master) schedule(jobName string, mapFiles []string, nReduce int, phase
                 workAddr := <-registerChan
                 // if the worker is failed, get another
                 if _, ok := mr.FailWorker[workAddr]; !ok{  
-                	workAddr := <-registerChan
+                	workAddr = <-registerChan
                 }
 
                 taskFinished = call(workAddr, "Worker.DoTask", taskArgs, reply)
@@ -88,7 +91,7 @@ func (mr *Master) schedule(jobName string, mapFiles []string, nReduce int, phase
 		            break
                 }else{
                 	if phase == reducePhase {
-                		address = reply.address // address of the probably failed worker
+                		address := reply.address // address of the probably failed worker
                 		mr.Lock()
                 		_, ok := mr.FailWorker[address]
                 		if ok == false {
@@ -127,7 +130,7 @@ func (mr *Master) checkWorker(address string, fixChannel chan bool, taskArgs DoT
 		taskArgs.Phase = mapPhase
 		taskArgs.NumOtherPhase = nReduce
 
-		restartTaskNum = len(mr.TaskIndexesOfWorker[address] )
+		restartTaskNum := len(mr.TaskIndexesOfWorker[address] )
 
 		var wg sync.WaitGroup
 	    wg.Add(restartTaskNum)
@@ -138,11 +141,12 @@ func (mr *Master) checkWorker(address string, fixChannel chan bool, taskArgs DoT
 	    	go func(i int) {
 	    		taskArgs.File = mr.FilesOfWorker[address][i]
 				taskArgs.TaskNumber = mr.TaskIndexesOfWorker[address][i]
-				taskFinished = call(workAddr, "Worker.DoTask", taskArgs, reply)
-				wg.Done()	
+				reply := &TaskReply{}
+				taskFinished := call(workAddr, "Worker.DoTask", taskArgs, reply)
+				wg.Done()
 	    	}
 	    }
-		
+
 	    // go func() { registerChan <- workAddr }()
 
 		wg.Wait()

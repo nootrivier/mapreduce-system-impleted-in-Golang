@@ -4,6 +4,7 @@ import (
 	"hash/fnv"
 	"ioutil"
 	"encoding/json"
+	"log"
 	"os"
 )
 
@@ -77,11 +78,11 @@ func doMap(
 		}
 		enc[i] = json.NewEncoder(f)
 		files = append(files, reduceFileName)
-		defer f.Close()
+		//defer f.Close()
 	}
 
 	for _, kv := range kvs {
-		err := enc[ihash(kv.key)%nReduce].Encode(&kv)
+		err := enc[ihash(kv.Key)%nReduce].Encode(&kv)
 		if err != nil {
             log.Fatal("Encode err", err)
         }

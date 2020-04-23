@@ -53,28 +53,29 @@ func doReduce(
 	kvs := make(map[string][]string)
 
 	for i := 0; i < nMap; i++ {
+		fileName := reduceName(jobName, i, reduceTask)
 		file, err := os.Open(fileName)
 		if err != nil {
 			panic(err)
 		}
 
-		mergeFileName := mergeName(jobName, reduceTask)
 
-		dec := json.NewDecoder(mergeFileName)
+
+		dec := json.NewDecoder(file)
 		for {
 			var kv KeyValue
 			err := dec.Decode(&kv)
 			if err != nil {
 				break
 			}
-			if _, ok := kvs[kv.key]; !ok {
-		        kvs[kv.key] = make([]string,0)
+			if _, ok := kvs[kv.Key]; !ok {
+		        kvs[kv.Key] = make([]string,0)
 		    }
-		    kvs[kv.key] = append(kvs[kv.Key], kv.Value)
+		    kvs[kv.Key] = append(kvs[kv.Key], kv.Value)
 		}
 		file.Close()
 	}
-
+	mergeFileName := mergeName(jobName, reduceTask)
 	file,err := os.Create(outFile)
 	defer file.Close()
 	if err != nil {
